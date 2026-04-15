@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import logo from "@/assets/karimi-logo.png";
-import { Instagram, Twitter, Facebook, Youtube, Mail, Phone, MapPin } from "lucide-react";
+import { Globe, MessageCircle, Share2, Play, Mail, Phone, MapPin } from "lucide-react";
 
 const Footer = () => (
   <footer className="border-t border-border bg-card/50">
@@ -12,7 +12,7 @@ const Footer = () => (
             فروشگاه آنلاین کریمی - تجربه خرید لوکس در سطح جهانی با بهترین محصولات پریمیوم
           </p>
           <div className="flex gap-3 mt-4">
-            {[Instagram, Twitter, Facebook, Youtube].map((Icon, i) => (
+            {[Globe, MessageCircle, Share2, Play].map((Icon, i) => (
               <a key={i} href="#" className="p-2 rounded-full bg-secondary hover:bg-accent/20 transition-colors">
                 <Icon className="w-4 h-4 text-foreground/60" />
               </a>
