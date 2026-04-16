@@ -1,13 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
-import { getProducts, categories } from "@/lib/store";
+import { getProducts, categories, type Product } from "@/lib/store";
 
 const ProductsPage = () => {
   const [activeCategory, setActiveCategory] = useState("همه");
-  const products = getProducts();
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    getProducts().then(setProducts);
+  }, []);
+
   const filtered = activeCategory === "همه" ? products : products.filter(p => p.category === activeCategory);
 
   return (
@@ -22,7 +27,7 @@ const ProductsPage = () => {
           >
             محصولات
           </motion.h1>
-          <p className="text-foreground/50 text-center text-sm mb-10">بهترین محصولات لوکس جهان</p>
+          <p className="text-muted-foreground text-center text-sm mb-10">بهترین محصولات لوکس جهان</p>
 
           <div className="flex flex-wrap justify-center gap-3 mb-10">
             {["همه", ...categories].map(cat => (
@@ -31,7 +36,7 @@ const ProductsPage = () => {
                 onClick={() => setActiveCategory(cat)}
                 className={`px-4 py-2 rounded-full text-xs font-semibold transition-all ${
                   activeCategory === cat
-                    ? "bg-accent text-accent-foreground"
+                    ? "bg-accent text-accent-foreground shadow-md"
                     : "bg-secondary text-foreground/60 hover:bg-secondary/80"
                 }`}
               >
@@ -47,7 +52,7 @@ const ProductsPage = () => {
           </div>
 
           {filtered.length === 0 && (
-            <p className="text-center text-foreground/40 mt-10">محصولی یافت نشد</p>
+            <p className="text-center text-muted-foreground mt-10">محصولی یافت نشد</p>
           )}
         </div>
       </div>

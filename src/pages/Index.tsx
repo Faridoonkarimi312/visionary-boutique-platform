@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
@@ -6,21 +7,23 @@ import ProductCard from "@/components/ProductCard";
 import FeaturesSection from "@/components/FeaturesSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import Footer from "@/components/Footer";
-import { getProducts } from "@/lib/store";
+import { getProducts, type Product } from "@/lib/store";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
-  const products = getProducts().filter(p => p.featured);
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    getProducts().then(all => setProducts(all.filter(p => p.featured)));
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <HeroSection />
-
       <CategoriesSection />
 
-      {/* Featured Products */}
       <section className="py-20 px-4">
         <div className="container mx-auto">
           <div className="flex items-center justify-between mb-10">
@@ -49,7 +52,6 @@ const Index = () => {
 
       <FeaturesSection />
 
-      {/* Banner */}
       <section className="py-20 px-4">
         <div className="container mx-auto">
           <motion.div
@@ -63,12 +65,12 @@ const Index = () => {
               <h2 className="text-3xl md:text-5xl font-display font-bold text-silver-gradient mb-4">
                 تخفیف ویژه ۲۰٪
               </h2>
-              <p className="text-foreground/50 mb-8 max-w-md mx-auto text-sm">
+              <p className="text-muted-foreground mb-8 max-w-md mx-auto text-sm">
                 فرصت محدود! از تخفیف ویژه کریمی بهره‌مند شوید. ارسال رایگان برای تمامی سفارشات.
               </p>
               <Link
                 to="/products"
-                className="inline-block px-8 py-4 bg-accent text-accent-foreground rounded-lg font-semibold text-sm hover:opacity-90 transition-all"
+                className="inline-block px-8 py-4 bg-accent text-accent-foreground rounded-lg font-semibold text-sm hover:opacity-90 transition-all shadow-lg"
               >
                 همین الان خرید کنید
               </Link>
