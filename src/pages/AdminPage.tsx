@@ -1,57 +1,115 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
 import {
-  authenticateAdmin, isAdminLoggedIn, loginAdmin, logoutAdmin,
-  getProducts, addProduct, deleteProduct, categories,
-  type Product
+  getProducts, addProduct, deleteProduct, uploadProductImage,
+  getMessages, categories, type Product
 } from "@/lib/store";
-import { Trash2, Plus, LogOut, LayoutDashboard, Package, Eye } from "lucide-react";
+import { Trash2, Plus, LogOut, LayoutDashboard, Package, Eye, Upload, MessageCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminPage = () => {
-  const [loggedIn, setLoggedIn] = useState(isAdminLoggedIn());
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: "", price: 0, category: categories[0], image: "", description: "", featured: false });
+  const [showMessages, setShowMessages] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [newProduct, setNewProduct] = useState({ name: "", price: 0, category: categories[0], description: "", featured: false });
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (loggedIn) setProducts(getProducts());
+    supabase.auth.onAuthStateChange((event, session) => {
+      setLoggedIn(!!session);
+      setLoading(false);
+    });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setLoggedIn(!!session);
+      setLoading(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (loggedIn) {
+      getProducts().then(setProducts);
+      getMessages().then(setMessages).catch(() => {});
+    }
   }, [loggedIn]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (authenticateAdmin(email, password)) {
-      loginAdmin();
-      setLoggedIn(true);
-      setError("");
-    } else {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
       setError("ایمیل یا رمز عبور اشتباه است");
+    } else {
+      setError("");
     }
   };
 
-  const handleLogout = () => {
-    logoutAdmin();
-    setLoggedIn(false);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onload = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    addProduct(newProduct);
-    setProducts(getProducts());
-    setShowForm(false);
-    setNewProduct({ name: "", price: 0, category: categories[0], image: "", description: "", featured: false });
+    setUploading(true);
+    try {
+      let image_url: string | null = null;
+      if (imageFile) {
+        image_url = await uploadProductImage(imageFile);
+      }
+      await addProduct({ ...newProduct, image_url });
+      const updated = await getProducts();
+      setProducts(updated);
+      setShowForm(false);
+      setNewProduct({ name: "", price: 0, category: categories[0], description: "", featured: false });
+      setImageFile(null);
+      setImagePreview(null);
+      toast({ title: "محصول با موفقیت اضافه شد!" });
+    } catch (err: any) {
+      toast({ title: "خطا", description: err?.message || "افزودن محصول ناموفق بود", variant: "destructive" });
+    }
+    setUploading(false);
   };
 
-  const handleDelete = (id: string) => {
-    deleteProduct(id);
-    setProducts(getProducts());
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteProduct(id);
+      setProducts(products.filter(p => p.id !== id));
+      toast({ title: "محصول حذف شد" });
+    } catch {
+      toast({ title: "خطا در حذف محصول", variant: "destructive" });
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">در حال بارگذاری...</div>
+      </div>
+    );
+  }
 
   if (!loggedIn) {
     return (
@@ -66,7 +124,7 @@ const AdminPage = () => {
             <div className="text-center mb-6">
               <LayoutDashboard className="w-12 h-12 text-accent mx-auto mb-3" />
               <h1 className="text-2xl font-display font-bold text-foreground">پنل مدیریت</h1>
-              <p className="text-foreground/50 text-xs mt-1">برای ورود به داشبورد وارد شوید</p>
+              <p className="text-muted-foreground text-xs mt-1">برای ورود به داشبورد وارد شوید</p>
             </div>
             {error && (
               <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-xs text-center">
@@ -80,7 +138,7 @@ const AdminPage = () => {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="ایمیل"
                 required
-                className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-foreground/30 focus:border-accent focus:outline-none transition-colors"
+                className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-muted-foreground focus:border-accent focus:outline-none transition-colors"
               />
               <input
                 type="password"
@@ -88,7 +146,7 @@ const AdminPage = () => {
                 onChange={e => setPassword(e.target.value)}
                 placeholder="رمز عبور"
                 required
-                className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-foreground/30 focus:border-accent focus:outline-none transition-colors"
+                className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-muted-foreground focus:border-accent focus:outline-none transition-colors"
               />
               <button
                 type="submit"
@@ -112,15 +170,22 @@ const AdminPage = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <div>
               <h1 className="text-3xl font-display font-bold text-silver-gradient">داشبورد مدیریت</h1>
-              <p className="text-foreground/50 text-xs mt-1">مدیریت محصولات و محتوای وبسایت</p>
+              <p className="text-muted-foreground text-xs mt-1">مدیریت محصولات و محتوای وبسایت</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               <button
                 onClick={() => navigate("/")}
                 className="px-4 py-2 bg-secondary rounded-lg text-foreground/70 text-xs font-semibold flex items-center gap-2 hover:bg-secondary/80 transition-colors"
               >
                 <Eye className="w-4 h-4" />
                 مشاهده سایت
+              </button>
+              <button
+                onClick={() => setShowMessages(!showMessages)}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold flex items-center gap-2 hover:opacity-90"
+              >
+                <MessageCircle className="w-4 h-4" />
+                پیام‌ها ({messages.length})
               </button>
               <button
                 onClick={() => setShowForm(true)}
@@ -145,15 +210,36 @@ const AdminPage = () => {
               { label: "کل محصولات", value: products.length, icon: Package },
               { label: "محصولات ویژه", value: products.filter(p => p.featured).length, icon: Package },
               { label: "دسته‌بندی‌ها", value: categories.length, icon: Package },
-              { label: "بازدید امروز", value: "۱,۲۴۵", icon: Eye },
+              { label: "پیام‌ها", value: messages.length, icon: MessageCircle },
             ].map(s => (
               <div key={s.label} className="glass-card rounded-xl p-4">
                 <s.icon className="w-6 h-6 text-accent mb-2" />
                 <p className="text-2xl font-display font-bold text-foreground">{s.value}</p>
-                <p className="text-foreground/50 text-xs">{s.label}</p>
+                <p className="text-muted-foreground text-xs">{s.label}</p>
               </div>
             ))}
           </div>
+
+          {/* Messages */}
+          {showMessages && messages.length > 0 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 mb-8">
+              <h2 className="font-display font-bold text-foreground mb-4">پیام‌های مشتریان</h2>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {messages.map((m: any) => (
+                  <div key={m.id} className="p-4 bg-secondary rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-semibold text-sm text-foreground">{m.sender_name}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(m.created_at).toLocaleDateString("fa-IR")}</span>
+                    </div>
+                    {m.sender_email && <p className="text-xs text-muted-foreground">📧 {m.sender_email}</p>}
+                    {m.sender_phone && <p className="text-xs text-muted-foreground">📱 {m.sender_phone}</p>}
+                    <p className="text-sm text-foreground mt-2">{m.message}</p>
+                    {m.products?.name && <p className="text-xs text-accent mt-1">محصول: {m.products.name}</p>}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
           {/* Add Product Form */}
           {showForm && (
@@ -170,7 +256,7 @@ const AdminPage = () => {
                     value={newProduct.name}
                     onChange={e => setNewProduct(p => ({ ...p, name: e.target.value }))}
                     placeholder="نام محصول"
-                    className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-foreground/30 focus:border-accent focus:outline-none"
+                    className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-muted-foreground focus:border-accent focus:outline-none"
                   />
                   <input
                     required
@@ -178,7 +264,7 @@ const AdminPage = () => {
                     value={newProduct.price || ""}
                     onChange={e => setNewProduct(p => ({ ...p, price: Number(e.target.value) }))}
                     placeholder="قیمت ($)"
-                    className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-foreground/30 focus:border-accent focus:outline-none"
+                    className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-muted-foreground focus:border-accent focus:outline-none"
                   />
                   <select
                     value={newProduct.category}
@@ -189,39 +275,56 @@ const AdminPage = () => {
                       <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
-                  <input
-                    value={newProduct.image}
-                    onChange={e => setNewProduct(p => ({ ...p, image: e.target.value }))}
-                    placeholder="لینک عکس محصول (URL)"
-                    className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-foreground/30 focus:border-accent focus:outline-none"
-                  />
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground/60 text-sm flex items-center gap-2 hover:border-accent transition-colors"
+                    >
+                      <Upload className="w-4 h-4" />
+                      {imageFile ? imageFile.name : "آپلود عکس محصول"}
+                    </button>
+                  </div>
                 </div>
+                {imagePreview && (
+                  <div className="w-32 h-32 rounded-lg overflow-hidden border border-border">
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
                 <textarea
                   value={newProduct.description}
                   onChange={e => setNewProduct(p => ({ ...p, description: e.target.value }))}
                   placeholder="توضیحات محصول"
                   rows={3}
-                  className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-foreground/30 focus:border-accent focus:outline-none resize-none"
+                  className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-muted-foreground focus:border-accent focus:outline-none resize-none"
                 />
                 <label className="flex items-center gap-2 text-foreground/70 text-sm">
                   <input
                     type="checkbox"
                     checked={newProduct.featured}
                     onChange={e => setNewProduct(p => ({ ...p, featured: e.target.checked }))}
-                    className="accent-accent"
+                    className="accent-[hsl(25,85%,55%)]"
                   />
                   محصول ویژه
                 </label>
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    className="px-6 py-3 bg-accent text-accent-foreground rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity"
+                    disabled={uploading}
+                    className="px-6 py-3 bg-accent text-accent-foreground rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
                   >
-                    افزودن
+                    {uploading ? "در حال آپلود..." : "افزودن"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowForm(false)}
+                    onClick={() => { setShowForm(false); setImageFile(null); setImagePreview(null); }}
                     className="px-6 py-3 bg-secondary text-foreground/70 rounded-lg font-semibold text-sm hover:bg-secondary/80 transition-colors"
                   >
                     انصراف
@@ -239,7 +342,8 @@ const AdminPage = () => {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border text-foreground/50 text-xs">
+                  <tr className="border-b border-border text-muted-foreground text-xs">
+                    <th className="p-4 text-right">عکس</th>
                     <th className="p-4 text-right">نام</th>
                     <th className="p-4 text-right">دسته‌بندی</th>
                     <th className="p-4 text-right">قیمت</th>
@@ -250,14 +354,19 @@ const AdminPage = () => {
                 <tbody>
                   {products.map(product => (
                     <tr key={product.id} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
+                      <td className="p-4">
+                        {product.image_url && (
+                          <img src={product.image_url} alt={product.name} className="w-12 h-12 rounded-lg object-cover" />
+                        )}
+                      </td>
                       <td className="p-4 text-sm text-foreground font-medium">{product.name}</td>
-                      <td className="p-4 text-xs text-foreground/60">{product.category}</td>
+                      <td className="p-4 text-xs text-muted-foreground">{product.category}</td>
                       <td className="p-4 text-sm text-accent font-bold">${product.price}</td>
                       <td className="p-4 text-xs">
                         {product.featured ? (
                           <span className="px-2 py-1 bg-accent/20 text-accent rounded-full text-[10px]">ویژه</span>
                         ) : (
-                          <span className="text-foreground/30">—</span>
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </td>
                       <td className="p-4">
