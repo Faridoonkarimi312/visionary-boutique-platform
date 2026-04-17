@@ -24,7 +24,7 @@ const AdminPage = () => {
   const [uploading, setUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [newProduct, setNewProduct] = useState({ name: "", price: 0, category: categories[0], description: "", featured: false });
+  const [newProduct, setNewProduct] = useState({ name: "", price: 0, price_afn: 0, category: categories[0], description: "", featured: false });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -79,11 +79,11 @@ const AdminPage = () => {
       if (imageFile) {
         image_url = await uploadProductImage(imageFile);
       }
-      await addProduct({ ...newProduct, image_url });
+      await addProduct({ ...newProduct, image_url, price_afn: newProduct.price_afn || null });
       const updated = await getProducts();
       setProducts(updated);
       setShowForm(false);
-      setNewProduct({ name: "", price: 0, category: categories[0], description: "", featured: false });
+      setNewProduct({ name: "", price: 0, price_afn: 0, category: categories[0], description: "", featured: false });
       setImageFile(null);
       setImagePreview(null);
       toast({ title: "محصول با موفقیت اضافه شد!" });
@@ -263,7 +263,14 @@ const AdminPage = () => {
                     type="number"
                     value={newProduct.price || ""}
                     onChange={e => setNewProduct(p => ({ ...p, price: Number(e.target.value) }))}
-                    placeholder="قیمت ($)"
+                    placeholder="قیمت دلار ($)"
+                    className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-muted-foreground focus:border-accent focus:outline-none"
+                  />
+                  <input
+                    type="number"
+                    value={newProduct.price_afn || ""}
+                    onChange={e => setNewProduct(p => ({ ...p, price_afn: Number(e.target.value) }))}
+                    placeholder="قیمت افغانی (؋)"
                     className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-foreground text-sm placeholder:text-muted-foreground focus:border-accent focus:outline-none"
                   />
                   <select
@@ -361,7 +368,10 @@ const AdminPage = () => {
                       </td>
                       <td className="p-4 text-sm text-foreground font-medium">{product.name}</td>
                       <td className="p-4 text-xs text-muted-foreground">{product.category}</td>
-                      <td className="p-4 text-sm text-accent font-bold">${product.price}</td>
+                      <td className="p-4 text-sm">
+                        <div className="text-primary font-bold">${product.price}</div>
+                        <div className="text-accent text-xs">{(product.price_afn || product.price * 70).toLocaleString()} ؋</div>
+                      </td>
                       <td className="p-4 text-xs">
                         {product.featured ? (
                           <span className="px-2 py-1 bg-accent/20 text-accent rounded-full text-[10px]">ویژه</span>
