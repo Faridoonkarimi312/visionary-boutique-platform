@@ -4,6 +4,7 @@ export interface Product {
   id: string;
   name: string;
   price: number;
+  price_afn?: number | null;
   category: string;
   image_url: string | null;
   description: string | null;
@@ -19,7 +20,7 @@ export const getProducts = async (): Promise<Product[]> => {
     .select("*")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return data || [];
+  return (data as Product[]) || [];
 };
 
 export const getProductById = async (id: string): Promise<Product | null> => {
@@ -29,12 +30,13 @@ export const getProductById = async (id: string): Promise<Product | null> => {
     .eq("id", id)
     .single();
   if (error) return null;
-  return data;
+  return data as Product;
 };
 
 export const addProduct = async (product: {
   name: string;
   price: number;
+  price_afn: number | null;
   category: string;
   image_url: string | null;
   description: string;
@@ -46,7 +48,7 @@ export const addProduct = async (product: {
     .select()
     .single();
   if (error) throw error;
-  return data;
+  return data as Product;
 };
 
 export const deleteProduct = async (id: string) => {
@@ -85,4 +87,11 @@ export const getMessages = async () => {
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data || [];
+};
+
+// Format price - removes any "+" sign and formats nicely
+export const formatPrice = (n: number, currency: "USD" | "AFN" = "USD") => {
+  const abs = Math.abs(n);
+  const formatted = abs.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  return currency === "USD" ? `$${formatted}` : `${formatted} ؋`;
 };

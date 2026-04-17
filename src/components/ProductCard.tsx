@@ -1,7 +1,10 @@
 import { motion } from "framer-motion";
-import type { Product } from "@/lib/store";
-import { ShoppingCart, Heart } from "lucide-react";
+import { type Product, formatPrice } from "@/lib/store";
+import { ShoppingCart, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useCart } from "@/lib/cart";
+import { useLang } from "@/lib/i18n";
+import { useToast } from "@/hooks/use-toast";
 
 import phoneImg from "@/assets/product-phone.jpg";
 import watchImg from "@/assets/product-watch.jpg";
@@ -27,6 +30,17 @@ const ProductCard = ({ product, index = 0 }: { product: Product; index?: number 
   const imgSrc = product.image_url
     ? (fallbackMap[product.image_url] || product.image_url)
     : phoneImg;
+  const { add } = useCart();
+  const { t } = useLang();
+  const { toast } = useToast();
+  const priceAfn = product.price_afn || product.price * 70;
+
+  const handleAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    add(product);
+    toast({ title: t("cart_added"), description: product.name });
+  };
 
   return (
     <Link to={`/products/${product.id}`}>
@@ -34,11 +48,11 @@ const ProductCard = ({ product, index = 0 }: { product: Product; index?: number 
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: index * 0.1 }}
-        whileHover={{ y: -8 }}
-        className="group glass-card rounded-xl overflow-hidden cursor-pointer"
+        transition={{ duration: 0.5, delay: index * 0.08 }}
+        whileHover={{ y: -6 }}
+        className="group bg-card rounded-2xl overflow-hidden cursor-pointer border border-border/50 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10 transition-all"
       >
-        <div className="relative aspect-square overflow-hidden">
+        <div className="relative aspect-square overflow-hidden bg-secondary/30">
           <img
             src={imgSrc}
             alt={product.name}
@@ -47,30 +61,33 @@ const ProductCard = ({ product, index = 0 }: { product: Product; index?: number 
             height={400}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-foreground/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button className="p-2 rounded-full bg-card/80 backdrop-blur-sm hover:bg-accent transition-colors">
-              <Heart className="w-4 h-4" />
+          <div className="absolute inset-0 bg-gradient-to-t from-foreground/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+            <button
+              onClick={handleAdd}
+              className="flex-1 py-2 rounded-lg bg-accent text-accent-foreground text-xs font-semibold flex items-center justify-center gap-1 hover:opacity-90"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+              {t("add_to_cart")}
             </button>
-          </div>
-          <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button className="w-full py-2 rounded-lg bg-accent text-accent-foreground text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
-              <ShoppingCart className="w-4 h-4" />
-              مشاهده جزئیات
+            <button className="px-3 py-2 rounded-lg bg-card text-foreground text-xs font-semibold flex items-center gap-1 hover:bg-primary hover:text-primary-foreground">
+              <Eye className="w-3.5 h-3.5" />
             </button>
           </div>
           {product.featured && (
-            <span className="absolute top-3 left-3 px-2 py-1 bg-accent text-accent-foreground text-[10px] font-bold rounded-full">
-              ویژه
+            <span className="absolute top-3 left-3 px-2 py-1 bg-accent text-accent-foreground text-[10px] font-bold rounded-full shadow-md">
+              ★
             </span>
           )}
         </div>
         <div className="p-4">
-          <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
-          <h3 className="font-display font-semibold text-foreground text-sm mb-2">{product.name}</h3>
-          <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{product.description}</p>
-          <div className="flex items-center justify-between">
-            <span className="text-accent font-bold text-lg">${product.price}</span>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">{product.category}</p>
+          <h3 className="font-display font-semibold text-foreground text-sm mb-2 line-clamp-1">{product.name}</h3>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-col">
+              <span className="text-primary font-bold text-base leading-tight">{formatPrice(product.price)}</span>
+              <span className="text-accent text-[11px] font-semibold">{formatPrice(priceAfn, "AFN")}</span>
+            </div>
             <div className="flex gap-0.5">
               {[...Array(5)].map((_, i) => (
                 <span key={i} className="text-accent text-xs">★</span>
