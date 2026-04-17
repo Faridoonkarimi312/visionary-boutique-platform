@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Award, Users, Globe, Target } from "lucide-react";
-import logo from "@/assets/karimi-logo.png";
+import logo from "@/assets/karimi-logo-new.png";
 
 const AboutPage = () => (
   <div className="min-h-screen bg-background">
@@ -10,7 +10,9 @@ const AboutPage = () => (
     <div className="pt-24 pb-20 px-4">
       <div className="container mx-auto max-w-4xl">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
-          <img src={logo} alt="Karimi" className="h-20 mx-auto mb-6" />
+          <div className="w-24 h-24 mx-auto mb-6 rounded-full overflow-hidden border-4 border-primary/20 bg-card shadow-xl">
+            <img src={logo} alt="Karimi" className="w-full h-full object-cover" />
+          </div>
           <h1 className="text-4xl md:text-5xl font-display font-bold text-silver-gradient mb-4">درباره کریمی</h1>
           <p className="text-foreground/50 max-w-xl mx-auto text-sm leading-relaxed">
             کریمی یک برند لوکس جهانی است که بهترین محصولات پریمیوم را از سراسر جهان گردآوری کرده و با ضمانت اصالت و کیفیت به مشتریان عرضه می‌کند.
