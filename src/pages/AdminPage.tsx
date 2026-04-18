@@ -5,9 +5,9 @@ import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getProducts, addProduct, deleteProduct, uploadProductImage,
-  getMessages, categories, type Product
+  getMessages, categories, getAllReviews, approveReview, deleteReview, type Product
 } from "@/lib/store";
-import { Trash2, Plus, LogOut, LayoutDashboard, Package, Eye, Upload, MessageCircle } from "lucide-react";
+import { Trash2, Plus, LogOut, LayoutDashboard, Package, Eye, Upload, MessageCircle, Check, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
