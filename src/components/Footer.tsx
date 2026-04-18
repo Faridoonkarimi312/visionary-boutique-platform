@@ -45,9 +45,9 @@ const Footer = () => {
           <div>
             <h4 className="font-display font-semibold text-foreground mb-4 text-sm">{t("categories")}</h4>
             <div className="flex flex-col gap-2">
-              {["الکترونیک", "اکسسوری", "مد و فشن", "زیبایی"].map(c => (
+              {["cat_electronics", "cat_accessories", "cat_fashion", "cat_beauty"].map(c => (
                 <Link key={c} to="/products" className="text-muted-foreground hover:text-primary text-xs transition-colors">
-                  {c}
+                  {t(c)}
                 </Link>
               ))}
             </div>
@@ -55,17 +55,17 @@ const Footer = () => {
           <div>
             <h4 className="font-display font-semibold text-foreground mb-4 text-sm">{t("contact_us")}</h4>
             <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2">
+              <a href="mailto:faridoonkarimi2018@gmail.com" className="flex items-center gap-2 hover:text-primary transition-colors group">
                 <Mail className="w-4 h-4 text-primary" />
-                <span className="text-muted-foreground text-xs">info@karimi.store</span>
-              </div>
-              <div className="flex items-center gap-2">
+                <span dir="ltr" className="text-muted-foreground group-hover:text-primary text-xs">faridoonkarimi2018@gmail.com</span>
+              </a>
+              <a href="tel:+93783322296" className="flex items-center gap-2 hover:text-primary transition-colors group">
                 <Phone className="w-4 h-4 text-primary" />
-                <span className="text-muted-foreground text-xs">+93 700 000 000</span>
-              </div>
+                <span dir="ltr" className="text-muted-foreground group-hover:text-primary text-xs">+93 783 322 296</span>
+              </a>
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-primary" />
-                <span className="text-muted-foreground text-xs">افغانستان، کابل</span>
+                <span className="text-muted-foreground text-xs">{t("address_value")}</span>
               </div>
             </div>
           </div>
@@ -75,7 +75,7 @@ const Footer = () => {
             © {new Date().getFullYear()} Karimi Store
           </p>
           <p className="text-primary text-sm mt-2 font-display font-semibold">
-            ✦ {t("made_by")} ✦
+            ✦ ساخته شده توسط فریدون کریمی ✦
           </p>
         </div>
       </div>

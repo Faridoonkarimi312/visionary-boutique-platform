@@ -3,37 +3,23 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { getProductById, sendMessage, formatPrice, type Product } from "@/lib/store";
-import { ArrowRight, MessageCircle, ShoppingCart, Heart, Share2, Check, Download } from "lucide-react";
+import ProductReviews from "@/components/ProductReviews";
+import { getProductById, sendMessage, formatPrice, dbValueToKey, type Product } from "@/lib/store";
+import { ArrowRight, MessageCircle, ShoppingCart, Heart, Share2, Check, Download, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLang } from "@/lib/i18n";
 import { useCart } from "@/lib/cart";
 
-import phoneImg from "@/assets/product-phone.jpg";
-import watchImg from "@/assets/product-watch.jpg";
-import headphonesImg from "@/assets/product-headphones.jpg";
-import sunglassesImg from "@/assets/product-sunglasses.jpg";
-import bagImg from "@/assets/product-bag.jpg";
-import shoesImg from "@/assets/product-shoes.jpg";
-import laptopImg from "@/assets/product-laptop.jpg";
-import perfumeImg from "@/assets/product-perfume.jpg";
-
-const fallbackMap: Record<string, string> = {
-  "/products/phone.jpg": phoneImg,
-  "/products/watch.jpg": watchImg,
-  "/products/headphones.jpg": headphonesImg,
-  "/products/sunglasses.jpg": sunglassesImg,
-  "/products/bag.jpg": bagImg,
-  "/products/shoes.jpg": shoesImg,
-  "/products/laptop.jpg": laptopImg,
-  "/products/perfume.jpg": perfumeImg,
-};
+const PLACEHOLDER = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&q=80";
 
 const ProductDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [showMessageForm, setShowMessageForm] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [msgForm, setMsgForm] = useState({ sender_name: "", sender_email: "", sender_phone: "", message: "" });
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
@@ -46,10 +32,7 @@ const ProductDetailPage = () => {
     }
   }, [id]);
 
-  const imgSrc = product?.image_url
-    ? (fallbackMap[product.image_url] || product.image_url)
-    : phoneImg;
-
+  const imgSrc = product?.image_url || PLACEHOLDER;
   const priceAfn = product?.price_afn || (product ? product.price * 70 : 0);
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -58,11 +41,11 @@ const ProductDetailPage = () => {
     setSending(true);
     try {
       await sendMessage({ product_id: product.id, ...msgForm });
-      toast({ title: "✓", description: "پیام شما ارسال شد" });
+      toast({ title: "✓", description: t("message_sent") });
       setMsgForm({ sender_name: "", sender_email: "", sender_phone: "", message: "" });
       setShowMessageForm(false);
     } catch {
-      toast({ title: "خطا", variant: "destructive" });
+      toast({ title: "Error", variant: "destructive" });
     }
     setSending(false);
   };
@@ -82,7 +65,7 @@ const ProductDetailPage = () => {
       URL.revokeObjectURL(url);
       toast({ title: t("image_downloaded") });
     } catch {
-      toast({ title: "خطا در دانلود", variant: "destructive" });
+      toast({ title: "Error", variant: "destructive" });
     }
   };
 
@@ -117,6 +100,9 @@ const ProductDetailPage = () => {
     );
   }
 
+  const colors = ["#1e293b", "#dc2626", "#2563eb", "#16a34a", "#a855f7", "#f59e0b"];
+  const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -150,7 +136,7 @@ const ProductDetailPage = () => {
               className="flex flex-col justify-center"
             >
               <span className="text-xs text-primary font-semibold bg-primary/10 px-3 py-1 rounded-full w-fit mb-4">
-                {product.category}
+                {t(dbValueToKey(product.category))}
               </span>
               <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
                 {product.name}
@@ -175,6 +161,59 @@ const ProductDetailPage = () => {
                   <span>{t("free_shipping")}</span>
                 </div>
               )}
+
+              {/* Options dropdown */}
+              <div className="mb-6">
+                <button
+                  onClick={() => setOptionsOpen(o => !o)}
+                  className="w-full flex items-center justify-between gap-2 py-3 px-4 rounded-xl bg-secondary border border-border text-sm font-semibold text-foreground hover:bg-secondary/80 transition-colors"
+                >
+                  <span>{t("options")}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${optionsOpen ? "rotate-180" : ""}`} />
+                </button>
+                {optionsOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="mt-3 p-4 rounded-xl bg-card border border-border space-y-4"
+                  >
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">{t("color")}</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {colors.map(c => (
+                          <button
+                            key={c}
+                            onClick={() => setSelectedColor(c)}
+                            style={{ background: c }}
+                            className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                              selectedColor === c ? "border-primary ring-2 ring-primary/30" : "border-border"
+                            }`}
+                            aria-label={c}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">{t("size")}</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {sizes.map(s => (
+                          <button
+                            key={s}
+                            onClick={() => setSelectedSize(s)}
+                            className={`px-4 py-2 text-xs font-semibold rounded-lg border transition-colors ${
+                              selectedSize === s
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "border-border hover:border-primary hover:bg-primary/10"
+                            }`}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
 
               <div className="flex flex-wrap gap-3 mb-8">
                 <button
@@ -218,21 +257,21 @@ const ProductDetailPage = () => {
                       required
                       value={msgForm.sender_name}
                       onChange={e => setMsgForm(f => ({ ...f, sender_name: e.target.value }))}
-                      placeholder="نام شما *"
+                      placeholder={t("your_name") + " *"}
                       className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-sm focus:border-primary focus:outline-none"
                     />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <input
                         value={msgForm.sender_email}
                         onChange={e => setMsgForm(f => ({ ...f, sender_email: e.target.value }))}
-                        placeholder="ایمیل"
+                        placeholder={t("email")}
                         type="email"
                         className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-sm focus:border-primary focus:outline-none"
                       />
                       <input
                         value={msgForm.sender_phone}
                         onChange={e => setMsgForm(f => ({ ...f, sender_phone: e.target.value }))}
-                        placeholder="تلفن"
+                        placeholder={t("phone")}
                         className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-sm focus:border-primary focus:outline-none"
                       />
                     </div>
@@ -240,7 +279,7 @@ const ProductDetailPage = () => {
                       required
                       value={msgForm.message}
                       onChange={e => setMsgForm(f => ({ ...f, message: e.target.value }))}
-                      placeholder="پیام شما (مثلاً: آیا قیمت قابل بحث است؟)"
+                      placeholder={t("your_message")}
                       rows={3}
                       className="w-full px-4 py-3 rounded-lg bg-secondary border border-border text-sm focus:border-primary focus:outline-none resize-none"
                     />
@@ -249,13 +288,15 @@ const ProductDetailPage = () => {
                       disabled={sending}
                       className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90 disabled:opacity-50"
                     >
-                      {sending ? "..." : "ارسال"}
+                      {sending ? t("sending") : t("send_message")}
                     </button>
                   </form>
                 </motion.div>
               )}
             </motion.div>
           </div>
+
+          <ProductReviews productId={product.id} />
         </div>
       </div>
       <Footer />

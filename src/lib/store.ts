@@ -12,7 +12,43 @@ export interface Product {
   created_at?: string;
 }
 
-export const categories = ["الکترونیک", "اکسسوری", "مد و فشن", "کفش", "زیبایی", "خانه و زندگی"];
+export interface Review {
+  id: string;
+  product_id: string;
+  reviewer_name: string;
+  reviewer_email: string | null;
+  rating: number;
+  comment: string;
+  approved: boolean;
+  created_at: string;
+}
+
+// Category keys (used to look up i18n translation)
+export const categoryKeys = [
+  "cat_electronics",
+  "cat_accessories",
+  "cat_fashion",
+  "cat_shoes",
+  "cat_beauty",
+  "cat_home",
+] as const;
+
+// Map between i18n key and the actual db category string (Persian, kept for backward compat with seeded data)
+export const categoryDbValues: Record<typeof categoryKeys[number], string> = {
+  cat_electronics: "الکترونیک",
+  cat_accessories: "اکسسوری",
+  cat_fashion: "مد و فشن",
+  cat_shoes: "کفش",
+  cat_beauty: "زیبایی",
+  cat_home: "خانه و زندگی",
+};
+
+export const dbValueToKey = (val: string): string => {
+  const entry = Object.entries(categoryDbValues).find(([, v]) => v === val);
+  return entry ? entry[0] : val;
+};
+
+export const categories = Object.values(categoryDbValues);
 
 export const getProducts = async (): Promise<Product[]> => {
   const { data, error } = await supabase
@@ -89,7 +125,49 @@ export const getMessages = async () => {
   return data || [];
 };
 
-// Format price - removes any "+" sign and formats nicely
+// Reviews
+export const submitReview = async (review: {
+  product_id: string;
+  reviewer_name: string;
+  reviewer_email?: string;
+  rating: number;
+  comment: string;
+}) => {
+  const { error } = await supabase.from("reviews").insert({ ...review, approved: false });
+  if (error) throw error;
+};
+
+export const getApprovedReviews = async (productId: string): Promise<Review[]> => {
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("*")
+    .eq("product_id", productId)
+    .eq("approved", true)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data as Review[]) || [];
+};
+
+export const getAllReviews = async () => {
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("*, products(name)")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data || [];
+};
+
+export const approveReview = async (id: string) => {
+  const { error } = await supabase.from("reviews").update({ approved: true }).eq("id", id);
+  if (error) throw error;
+};
+
+export const deleteReview = async (id: string) => {
+  const { error } = await supabase.from("reviews").delete().eq("id", id);
+  if (error) throw error;
+};
+
+// Format price
 export const formatPrice = (n: number, currency: "USD" | "AFN" = "USD") => {
   const abs = Math.abs(n);
   const formatted = abs.toLocaleString("en-US", { maximumFractionDigits: 0 });
