@@ -10,12 +10,16 @@ import Footer from "@/components/Footer";
 import { getProducts, type Product } from "@/lib/store";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useLang } from "@/lib/i18n";
 
 const Index = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const { t } = useLang();
 
   useEffect(() => {
-    getProducts().then(all => setProducts(all.filter(p => p.featured)));
+    getProducts()
+      .then(all => setProducts(all.filter(p => p.featured).slice(0, 8)))
+      .catch(err => console.error("Failed to load products:", err));
   }, []);
 
   return (
@@ -33,13 +37,13 @@ const Index = () => {
               viewport={{ once: true }}
               className="text-3xl md:text-4xl font-display font-bold text-silver-gradient"
             >
-              محصولات ویژه
+              {t("featured_products")}
             </motion.h2>
             <Link
               to="/products"
               className="text-accent text-sm font-semibold flex items-center gap-1 hover:gap-2 transition-all"
             >
-              مشاهده همه <ArrowRight className="w-4 h-4" />
+              {t("view_all")} <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -63,16 +67,16 @@ const Index = () => {
             <div className="absolute inset-0 shimmer" />
             <div className="relative z-10">
               <h2 className="text-3xl md:text-5xl font-display font-bold text-silver-gradient mb-4">
-                تخفیف ویژه ۲۰٪
+                {t("special_offer")}
               </h2>
               <p className="text-muted-foreground mb-8 max-w-md mx-auto text-sm">
-                فرصت محدود! از تخفیف ویژه کریمی بهره‌مند شوید. ارسال رایگان برای تمامی سفارشات.
+                {t("special_offer_desc")}
               </p>
               <Link
                 to="/products"
-                className="inline-block px-8 py-4 bg-accent text-accent-foreground rounded-lg font-semibold text-sm hover:opacity-90 transition-all shadow-lg"
+                className="inline-block px-8 py-4 bg-accent text-accent-foreground rounded-lg font-semibold text-sm hover:opacity-90 hover:scale-105 transition-all shadow-lg"
               >
-                همین الان خرید کنید
+                {t("buy_now_cta")}
               </Link>
             </div>
           </motion.div>

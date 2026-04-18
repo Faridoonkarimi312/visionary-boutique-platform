@@ -13,7 +13,7 @@ const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const location = useLocation();
-  const { t, lang, setLang } = useLang();
+  const { t, lang, setLang, dir } = useLang();
   const { count, setOpen: setCartOpen } = useCart();
 
   const links = [
@@ -31,21 +31,23 @@ const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50 shadow-sm">
+      <nav dir="ltr" className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border/50 shadow-sm">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
+          {/* LOGO - always on the left */}
+          <Link to="/" className="flex items-center gap-3 shrink-0">
             <div className="w-10 h-10 rounded-full overflow-hidden bg-card border-2 border-primary/20 shadow-md">
               <img src={logo} alt="Karimi" className="w-full h-full object-cover" />
             </div>
             <span className="font-display font-bold text-lg text-silver-gradient hidden sm:block">KARIMI</span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-1">
+          {/* Center menu */}
+          <div dir={dir} className="hidden md:flex items-center gap-1 mx-auto">
             {links.map(link => (
               <Link
                 key={link.to}
                 to={link.to}
-                className={`relative px-4 py-2 text-sm font-medium rounded-full transition-all hover:bg-primary/10 hover:text-primary ${
+                className={`relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 hover:bg-primary/10 hover:text-primary hover:scale-105 ${
                   location.pathname === link.to ? "text-primary bg-primary/10" : "text-foreground/80"
                 }`}
               >
@@ -54,11 +56,12 @@ const Navbar = () => {
             ))}
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Action buttons - always on the right */}
+          <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => setSearchOpen(true)}
               aria-label={t("search")}
-              className="p-2 rounded-full hover:bg-primary/10 hover:text-primary transition-all"
+              className="p-2 rounded-full hover:bg-primary/10 hover:text-primary transition-all hover:scale-110"
             >
               <Search className="w-5 h-5 text-foreground/70" />
             </button>
@@ -67,7 +70,7 @@ const Navbar = () => {
               <button
                 onClick={() => setLangOpen(!langOpen)}
                 aria-label={t("language")}
-                className="p-2 rounded-full hover:bg-primary/10 hover:text-primary transition-all flex items-center gap-1"
+                className="p-2 rounded-full hover:bg-primary/10 hover:text-primary transition-all hover:scale-110 flex items-center gap-1"
               >
                 <Globe className="w-5 h-5 text-foreground/70" />
                 <span className="text-[10px] font-bold uppercase">{lang}</span>
@@ -86,7 +89,7 @@ const Navbar = () => {
                         <button
                           key={l.code}
                           onClick={() => { setLang(l.code); setLangOpen(false); }}
-                          className="w-full px-4 py-2 text-sm text-right hover:bg-primary/10 flex items-center justify-between"
+                          className="w-full px-4 py-2 text-sm text-left flex items-center justify-between hover:bg-primary/10 transition-colors"
                         >
                           <span>{l.label}</span>
                           {lang === l.code && <Check className="w-4 h-4 text-primary" />}
@@ -98,14 +101,14 @@ const Navbar = () => {
               </AnimatePresence>
             </div>
 
-            <Link to="/admin" aria-label={t("admin_dashboard")} className="p-2 rounded-full hover:bg-primary/10 hover:text-primary transition-all">
+            <Link to="/admin" aria-label={t("admin_dashboard")} className="p-2 rounded-full hover:bg-primary/10 hover:text-primary transition-all hover:scale-110">
               <User className="w-5 h-5 text-foreground/70" />
             </Link>
 
             <button
               onClick={() => setCartOpen(true)}
               aria-label={t("cart")}
-              className="p-2 rounded-full hover:bg-primary/10 hover:text-primary transition-all relative"
+              className="p-2 rounded-full hover:bg-primary/10 hover:text-primary transition-all hover:scale-110 relative"
             >
               <ShoppingCart className="w-5 h-5 text-foreground/70" />
               {count > 0 && (
@@ -131,6 +134,7 @@ const Navbar = () => {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
+              dir={dir}
               className="md:hidden overflow-hidden bg-card border-t border-border"
             >
               <div className="p-4 flex flex-col gap-1">
