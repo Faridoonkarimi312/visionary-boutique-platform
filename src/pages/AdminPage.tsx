@@ -207,6 +207,13 @@ const AdminPage = () => {
                 پیام‌ها ({messages.length})
               </button>
               <button
+                onClick={() => setShowReviews(!showReviews)}
+                className="px-4 py-2 bg-secondary rounded-lg text-foreground/70 text-xs font-semibold flex items-center gap-2 hover:bg-secondary/80 transition-colors"
+              >
+                <Star className="w-4 h-4" />
+                نظرات ({reviews.filter(r => !r.approved).length} در انتظار)
+              </button>
+              <button
                 onClick={() => setShowForm(true)}
                 className="px-4 py-2 bg-accent text-accent-foreground rounded-lg text-xs font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity"
               >
@@ -238,6 +245,56 @@ const AdminPage = () => {
               </div>
             ))}
           </div>
+
+          {/* Reviews moderation */}
+          {showReviews && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl p-6 mb-8">
+              <h2 className="font-display font-bold text-foreground mb-4">مدیریت نظرات</h2>
+              {reviews.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-6">هیچ نظری ثبت نشده</p>
+              ) : (
+                <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                  {reviews.map((r: any) => (
+                    <div key={r.id} className={`p-4 rounded-lg border ${r.approved ? "bg-secondary/30 border-border" : "bg-accent/5 border-accent/30"}`}>
+                      <div className="flex justify-between items-start mb-2 flex-wrap gap-2">
+                        <div>
+                          <span className="font-semibold text-sm text-foreground">{r.reviewer_name}</span>
+                          {r.reviewer_email && <span className="text-xs text-muted-foreground mr-2"> · {r.reviewer_email}</span>}
+                        </div>
+                        <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("fa-IR")}</span>
+                      </div>
+                      <div className="flex gap-0.5 mb-2">
+                        {[1,2,3,4,5].map(n => (
+                          <Star key={n} className={`w-3.5 h-3.5 ${n <= r.rating ? "text-accent fill-accent" : "text-muted-foreground/30"}`} />
+                        ))}
+                      </div>
+                      <p className="text-sm text-foreground mb-2">{r.comment}</p>
+                      {r.products?.name && <p className="text-xs text-primary mb-3">محصول: {r.products.name}</p>}
+                      <div className="flex gap-2">
+                        {!r.approved && (
+                          <button
+                            onClick={() => handleApproveReview(r.id)}
+                            className="px-3 py-1.5 bg-accent text-accent-foreground rounded-lg text-xs font-semibold flex items-center gap-1 hover:opacity-90"
+                          >
+                            <Check className="w-3.5 h-3.5" /> تأیید
+                          </button>
+                        )}
+                        {r.approved && (
+                          <span className="px-3 py-1.5 bg-accent/20 text-accent rounded-lg text-xs font-semibold">تأیید شده</span>
+                        )}
+                        <button
+                          onClick={() => handleDeleteReview(r.id)}
+                          className="px-3 py-1.5 bg-destructive/10 text-destructive rounded-lg text-xs font-semibold flex items-center gap-1 hover:bg-destructive/20"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> حذف
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
 
           {/* Messages */}
           {showMessages && messages.length > 0 && (
