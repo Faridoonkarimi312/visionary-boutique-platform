@@ -19,8 +19,10 @@ const AdminPage = () => {
   const [error, setError] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [messages, setMessages] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
+  const [showReviews, setShowReviews] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -44,8 +46,25 @@ const AdminPage = () => {
     if (loggedIn) {
       getProducts().then(setProducts);
       getMessages().then(setMessages).catch(() => {});
+      getAllReviews().then(setReviews).catch(() => {});
     }
   }, [loggedIn]);
+
+  const handleApproveReview = async (id: string) => {
+    try {
+      await approveReview(id);
+      setReviews(rs => rs.map(r => r.id === id ? { ...r, approved: true } : r));
+      toast({ title: "نظر تأیید شد" });
+    } catch { toast({ title: "خطا", variant: "destructive" }); }
+  };
+
+  const handleDeleteReview = async (id: string) => {
+    try {
+      await deleteReview(id);
+      setReviews(rs => rs.filter(r => r.id !== id));
+      toast({ title: "نظر حذف شد" });
+    } catch { toast({ title: "خطا", variant: "destructive" }); }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
